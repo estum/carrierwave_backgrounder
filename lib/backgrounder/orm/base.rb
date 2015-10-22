@@ -1,6 +1,3 @@
-# encoding: utf-8
-require 'backgrounder/workers'
-
 module CarrierWave
   module Backgrounder
     module ORM
@@ -38,12 +35,13 @@ module CarrierWave
         #     add_column :users, :avatar_processing, :boolean
         #   end
         #
-        def process_in_background(column, worker=::CarrierWave::Workers::ProcessAsset)
+        def process_in_background(column, worker = nil)
           attr_accessor :"process_#{column}_upload"
 
           mod = Module.new
           include mod
 
+          worker ||= ::CarrierWave::Workers::ProcessAsset
           _define_shared_backgrounder_methods(mod, column, worker)
         end
 
@@ -69,7 +67,7 @@ module CarrierWave
         #     store_in_background :avatar, CustomWorker
         #   end
         #
-        def store_in_background(column, worker=::CarrierWave::Workers::StoreAsset)
+        def store_in_background(column, worker = nil)
           attr_accessor :"process_#{column}_upload"
 
           mod = Module.new
@@ -91,6 +89,8 @@ module CarrierWave
 
           RUBY
 
+          worker ||= ::CarrierWave::Workers::StoreAsset
+
           _define_shared_backgrounder_methods(mod, column, worker)
         end
 
@@ -109,7 +109,7 @@ module CarrierWave
             end
 
             def enqueue_#{column}_background_job
-              CarrierWave::Backgrounder.enqueue_for_backend(#{worker}, self.class.name, id.to_s, #{column}.mounted_as)
+              #{worker}.perform_async(to_global_id.to_s, #{column}.mounted_as)
             end
           RUBY
         end

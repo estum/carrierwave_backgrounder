@@ -1,21 +1,17 @@
-# encoding: utf-8
 module CarrierWave
   module Workers
+    class ProcessAsset
+      include Sidekiq::Worker
 
-    class ProcessAsset < Base
-
-      def perform(*args)
-        record = super(*args)
-
-        if record && record.send(:"#{column}").present?
+      def perform(gid, column)
+        record = GlobalID.find(gid)
+        if record && record.public_send(column).present?
           record.send(:"process_#{column}_upload=", true)
-          if record.send(:"#{column}").recreate_versions! && record.respond_to?(:"#{column}_processing")
-            record.update_attribute :"#{column}_processing", false
+          if record.send(column).recreate_versions! && record.respond_to?(:"#{column}_processing")
+            record.update_attribute(:"#{column}_processing", false)
           end
         end
       end
-
-    end # ProcessAsset
-
-  end # Workers
-end # Backgrounder
+    end
+  end
+end

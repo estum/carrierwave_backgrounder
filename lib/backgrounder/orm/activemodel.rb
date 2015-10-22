@@ -1,4 +1,4 @@
-# encoding: utf-8
+require 'backgrounder/orm/base'
 
 module CarrierWave
   module Backgrounder
@@ -11,7 +11,7 @@ module CarrierWave
 
         def _define_shared_backgrounder_methods(mod, column, worker)
           before_save :"set_#{column}_processing", :if => :"enqueue_#{column}_background_job?"
-          send _supported_callback, :"enqueue_#{column}_background_job", :if => :"enqueue_#{column}_background_job?"
+          after_commit :"enqueue_#{column}_background_job", :if => :"enqueue_#{column}_background_job?"
 
           super
 
@@ -24,10 +24,6 @@ module CarrierWave
             send(:"remote_#{column}_url").present? ||                 # Remote upload support
             send(:"#{column}_cache").present?                         # Form failure support
           end
-        end
-
-        def _supported_callback
-          respond_to?(:after_commit) ? :after_commit : :after_save
         end
       end # ActiveModel
 
